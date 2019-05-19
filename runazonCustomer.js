@@ -3,56 +3,173 @@ var inquirer = require('inquirer');
 const cTable = require('console.table');
 
 var connection = mysql.createConnection({
-    host: "localhost",
-  
-    // Your port; if not 3306
-    port: 3306,
-  
-    // Your username
-    user: "root",
-  
-    // Your password
-    password: "root",
-    database: "runazon_db"
+  host: "localhost",
+
+  port: 3306,
+
+  user: "root",
+
+  password: "root",
+  database: "runazon_db"
+});
+
+
+connection.connect(function (err) {
+  if (err) throw err;
+  startUp();
+});
+
+
+function populateInv() {
+  var query = "SELECT * FROM inventory"
+  connection.query(query, function (err, res) {
+
+    tableValues = [['Id', 'Product', 'Department', 'Price', 'Stock']]
+    for (let i = 0; i < res.length; i++) {
+      tableValues
+        .push([res[i].item_id, res[i].product_name,
+        res[i].department_name, res[i].price, res[i].stock_quantity]);
+    }
+    console.table(tableValues[0], tableValues.slice(1));
+    selectProduct();
   });
-  
-  connection.connect(function(err) {
-    if (err) throw err;
-    displayInv();
-  });
+}
 
-
-function displayInv() {
-    var query = "SELECT * FROM inventory"
-    // console.log("inventory");
-    connection.query(query, function(err, res) {
-    // console.log(res[0].item_id);
-
-        var tableValues = [
-            ['Id', 'Product'],
-            // [res[0].item_id, res[0].product_name],
-            // [res[1].item_id, res[1].product_name],
-            // [res[2].item_id, res[2].product_name],
-            // [res[3].item_id, res[3].product_name],
-            // [res[4].item_id, res[4].product_name],
-            // [res[5].item_id, res[5].product_name],
-            // [res[6].item_id, res[6].product_name],
-            // [res[7].item_id, res[7].product_name],
-            // [res[8].item_id, res[8].product_name],
-            // [res[9].item_id, res[9].product_name], 
-        ]
-        for (let i = 0; i < res.length; i++) {
-            // console.log([res[i].item_id + ", " +  res[i].product_name]);
-            testArr1 = [];
-            testArr1.push(res[i].item_id);
-            testArr2 = [];
-            testArr2.push(res[i].product_name);
-            tableValues.push(testArr1);
-            tableValues.push(testArr2);
-        }
-        // console.log(tableValues);
-        // console.table(tableValues[0], tableValues.slice(1));
-        console.log(tableValues[0], tableValues.slice(1));
+function startUp() {
+  inquirer
+    .prompt({
+      name: 'autho',
+      type: 'list',
+      message: "Good Evening Runner, please select your account authorization level",
+      choices: ['Customer', 'Manager', 'Supervisor', 'Exit']
+    })
+    .then(function (answer) {
+      var userLevel = answer.autho;
+      if (userLevel === 'Customer') {
+        populateInv();
+      } else if (userLevel === 'Manager') {
+        managerLogin();
+      } else if (userLevel === 'Supervisor') {
+        supervisorLogin();
+      } else {
+       endGame();
+      }
     });
-    connection.end();
-  }
+}
+
+function selectProduct() {
+  inquirer
+    .prompt([
+      {
+        name: 'id',
+        type: 'input',
+        message: "Ah a valued Customer, I see. Which of my wares are you in need of tonight?"
+      },
+      {
+        name: 'qty',
+        type: 'input',
+        message: 'Yes well out with it, how many do you need? And you better have the credits for it...'
+      }])
+    .then(function (answer) {
+
+      var query = "SELECT * FROM inventory WHERE item_id=" + answer.id;
+
+      connection.query(query, function (err, res) {
+        var currentProductId = answer.id;
+        var productPrice = res[0].price;
+        var purchaseAmount = parseInt(answer.qty);
+        var parsePrice = parseInt(productPrice);
+        var totalPrice = parsePrice * purchaseAmount;
+        stockQty = res[0].stock_quantity;
+        if (purchaseAmount <= stockQty) {
+          makePurchase(stockQty, purchaseAmount, currentProductId, totalPrice);
+          console.log('good quantity');
+        } else if (purchaseAmount > stockQty) {
+          refusePurschase();
+        }
+      });
+    });
+};
+
+function makePurchase(stock, customerPurchase, product, cost) {
+  connection.query("UPDATE inventory SET stock_quantity=" + (stock - customerPurchase) + " WHERE item_id=" + product,
+    function (err, res) {
+      console.log("That'll cost ya " + cost + " credits runner. See me after your run. Well, if ya manage to find anythin' worth sellin' that is...");
+      connection.end();
+    });
+};
+
+function refusePurschase() {
+  console.log("Look, I know you don't have to count much to be a runner, but it sure would make my life easier...");
+  inquirer
+    .prompt(
+      {
+        name: 'mulligan',
+        type: 'confirm',
+        message: "So, you want to try this again? Maybe ask for something I actually help you with this time?"
+      }).then(function(answer) {
+        mulligan = answer.mulligan;
+        if (mulligan === true) {
+          populateInv();
+        } else if (mulligan === false) {
+          console.log("Well, if there's nothing I can do for you...")
+          endGame();
+        }
+      })
+    
+}
+
+
+function endGame() {
+  console.log(" Disconnecting from Runner's Virtual Market....");
+  console.log("Encrypting data...");
+  // When you want to know how things really work, study them when they're coming apart... - WIlliam Gibson
+  console.log("Ẅ̴̰́h̶̟͠ẽ̵̝ņ̴̾ ̶͚̉y̶̹͆o̴͈͂ù̷̮ ̷̖̃w̶͖̃a̸͓̋n̷̙̓t̵̮͝ ̷̳͌ẗ̴͍ỏ̵̤ ̵͉͊k̶̼̆n̸̨̆o̵̜̒ẘ̴̞ ̷̩̿h̵͓̏o̷̭͂ẁ̶̼ ̷͇̀ẗ̶̻́h̸̖͝i̴̗͐n̴̛̦g̶̘̈́s̸̱̎ ̴̠͋r̴̛͔ḙ̴̔a̴̼̋l̵̜͐l̶̖͊y̸̰͋ ̵͚̃w̶̧̌o̶̙̽r̴͖͋k̶̦̈́,̴͍́ ̷̡̐s̶̛̰t̷͍͝ü̷͍d̷̳͑y̸͈͋ ̸͙̕t̷̛̪h̶̩̒é̷̬m̸͈͊ ̴͖̈w̵̗̅ḥ̸͆e̶͈͊n̷̼͘ ̵̣͛t̶͓̕h̶̨͠ȅ̴̤y̸̻̕'̶̰̓ṙ̵̻e̸͗͜ ̸̳͠c̵̯̏o̴͚̓m̸̗̄ḭ̷͂n̸̟̋g̴̭̚ ̷̧͌ą̵̈́p̶̞̅â̶̼ř̶̮ṫ̷̤.̷̦̀.̷̛̟.̴̝̈́ ̸̘̉-̷͓͊ ̵̹͗W̴̛̘i̶͎̊l̷̦͠l̷̦̽ǐ̷̭a̶̦͂m̵̳̄ ̴̖̊G̷̦̊i̶̲͝b̶͕̅s̶̨͌o̴͍͝n̸̛̮");
+  connection.end();
+};
+
+function managerLogin() {
+  inquirer
+    .prompt([{
+      name:'user',
+      type:'input',
+      message:'Please input Username: '
+    },
+    {
+      name:'pass',
+      type:'password',
+      message:'Please input Password: ',
+      mask: '*'
+    }
+  ]).then(function(answers) {
+    if (answers.pass == "password") {
+    console.log('Good Evening Manager: ' + answers.user);
+    } else {
+      console.log('incorrect password, now shutting down all systems to avoid intrusion...')
+      connection.end();
+    }
+  })
+}
+
+function supervisorLogin() {
+  inquirer
+    .prompt([{
+      name:'user',
+      type:'input',
+      message:'Please input Username: '
+    },
+    {
+      name:'pass',
+      type:'password',
+      message:'Please input Password: ',
+      mask: '*'
+    }
+  ]).then(function(answers) {
+    if (answers.pass == "password") {
+    console.log('Good Evening Manager: ' + answers.user);
+    } else {
+      console.log('incorrect password, now shutting down all systems to avoid intrusion...')
+      connection.end();
+    }
+  })
+}
