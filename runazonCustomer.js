@@ -186,13 +186,13 @@ function managerAction(manager) {
       action = answer.action
       if (action == "View Products") {
         managerView(manager);
-      } else if ( action == "View Low Inventory") {
+      } else if (action == "View Low Inventory") {
         managerLowInv(manager);
-      } else if ( action == "Add To Stock") {
+      } else if (action == "Add To Stock") {
         addManager(manager);
-      } else if ( action == "Add New Product") {
+      } else if (action == "Add New Product") {
 
-      } else if ( action == "View Low Inventory") {
+      } else if (action == "View Low Inventory") {
       }
     });
 }
@@ -210,7 +210,7 @@ function managerView(manager) {
     }
     console.table(tableValues[0], tableValues.slice(1));
     managerAction(manager);
-});
+  });
 };
 
 function managerLowInv(manager) {
@@ -229,24 +229,56 @@ function managerLowInv(manager) {
 };
 
 function addManager(manager) {
+  var query = "SELECT * FROM inventory"
   inquirer
     .prompt([{
-      name:'item',
-      type:'input',
+      name: 'item',
+      type: 'input',
       message: "Which item would you like to add stock to?(id)"
     },
     {
       name: 'qty',
-      type:'input',
-      message:'How much merch do you want to add Manager' + manager + "?"
-    }]).then(function(answers){ 
-      product = answers.item;
-      newStock = answers.qty
-  connection.query("UPDATE inventory SET stock_quantity+" + newStock + " WHERE item_id=" + product,
-    function (err, res) {
+      type: 'input',
+      message: 'How much merch do you want to add Manager' + manager + "?"
+    }]).then(function (answers) {
+      product = answers.item - 1;
+      newStock = answers.qty;
+      console.log(product);
+      console.log(newStock);
+      // connection.query("UPDATE inventory SET stock_quantity =stock_quantity " + newStock + " WHERE item_id=" + product,
+      //   function (err, res) {
+      //     console.log(res);
+      //   });
+      connection.query("UPDATE inventory SET ? WHERE ?",
+        [
+          {
+            stock_quantity: stock_quantity + newStock
+          },
+          {
+            item_id: product
+          }
+        ],
+        function (err, res) {
+          console.log(res);
+        });
 
     });
-    console.table(tableValues[0], tableValues.slice(1));
-    managerAction(manager);
-  });
+  managerAction(manager);
 }
+
+function newManager() {
+  var query = connection.query(
+    "INSERT INTO products SET ?",
+    {
+      product_name: answers.product,
+      stock_quantity: 3.0,
+      quantity: 50
+    },
+    function(err, res) {
+      console.log(res.affectedRows + " product inserted!\n");
+    }
+  );
+}
+
+
+//Manager 'Add to Inventory' and 'Add new Product' not yet unctional
