@@ -1,4 +1,4 @@
-# bamazon
+# Runazon
 
 #Summary
 Bamazon, or Runazon for all you runners out there (Shadowrun theme by the way), is a store front for purchasing various 
