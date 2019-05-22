@@ -83,7 +83,6 @@ function selectProduct() {
         stockQty = res[0].stock_quantity;
         if (purchaseAmount <= stockQty) {
           makePurchase(stockQty, purchaseAmount, currentProductId, totalPrice);
-          console.log('good quantity');
         } else if (purchaseAmount > stockQty) {
           refusePurchase();
         }
@@ -112,7 +111,7 @@ function refusePurchase() {
         if (mulligan === true) {
           populateInv();
         } else if (mulligan === false) {
-          console.log("Alright then, but don't forget to stop by before your next run, never hurts to be prepared... ");
+          console.log("Fine, fine mein Fruend... But, don't forget to stop by before your next run, never hurts to be prepared... ");
           endGame();
         }
       })
@@ -191,8 +190,7 @@ function managerAction(manager) {
       } else if (action == "Add To Stock") {
         addManager(manager);
       } else if (action == "Add New Product") {
-
-      } else if (action == "View Low Inventory") {
+        newManager();
       }
     });
 }
@@ -223,6 +221,8 @@ function managerLowInv(manager) {
         .push([res[i].item_id, res[i].product_name,
         res[i].department_name, res[i].price, res[i].stock_quantity]);
     }
+    console.log("================================================\n");
+    console.log("Might want to restock some of these soon...\n");
     console.table(tableValues[0], tableValues.slice(1));
     managerAction(manager);
   });
